@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finalizar Compra</title>
+
+    <style>
+        body {
+            background: #f4f4f4;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .checkout-header {
+            width: 100%;
+            background: #ffffff;
+            padding: 15px 30px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 2000;
+            display: flex;
+            justify-content: space-between;
+            font-size: 20px;
+        }
+
+        .checkout-header a {
+            text-decoration: none;
+            color: #222;
+        }
+
+        .checkout-container {
+            max-width: 1200px;
+            margin: 120px auto 50px auto;
+            display: flex;
+            padding: 20px;
+            gap: 30px;
+        }
+
+        .datos-cliente, .resumen {
+            background: #ffffff;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+
+        .datos-cliente {
+            flex: 1;
+        }
+
+        .datos-cliente h2,
+        .resumen h2 {
+            font-size: 26px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            margin-top: 15px;
+            display: block;
+            font-size: 16px;
+            color: #333;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #bbb;
+            border-radius: 10px;
+            margin-top: 5px;
+        }
+
+        .resumen {
+            width: 350px;
+        }
+
+        .producto-linea {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 16px;
+        }
+
+        .total {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .btn-finalizar {
+            width: 100%;
+            margin-top: 30px;
+            padding: 15px;
+            background: #ff3c2a;
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: .3s;
+        }
+
+        .btn-finalizar:hover {
+            background: #d33225;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="checkout-header">
+        <a href="index.html">⬅ Volver</a>
+        <span>Finalizar Compra</span>
+    </header>
+
+    <div class="checkout-container">
+
+        <div class="datos-cliente">
+            <h2>Datos del Cliente</h2>
+
+            <label>Nombre Completo</label>
+            <input type="text">
+
+            <label>Correo Electrónico</label>
+            <input type="email">
+
+            <label>Teléfono</label>
+            <input type="text">
+
+            <label>Dirección</label>
+            <textarea></textarea>
+
+            <button class="btn-finalizar" id="btn-confirmar">Confirmar Pedido</button>
+        </div>
+
+        <div class="resumen">
+            <h2>Tu Pedido</h2>
+
+            <div id="lista-pedido"></div>
+
+            <div class="total" id="total-pedido"></div>
+        </div>
+    </div>
+
+    <script>
+        
+        let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+
+        const lista = document.getElementById("lista-pedido");
+        const totalBox = document.getElementById("total-pedido");
+
+        let total = 0;
+
+        carrito.forEach(prod => {
+            lista.innerHTML += `
+                <div class="producto-linea">
+                    <span>${prod.titulo}</span>
+                    <span>$${prod.precio}</span>
+                </div>
+            `;
+            total += Number(prod.precio);
+        });
+
+        totalBox.innerHTML = "Total: $" + total;
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+document.getElementById("btn-confirmar").addEventListener("click", generarFacturaPDF);
+
+function generarFacturaPDF() {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "letter",
+    });
+
+    // ======= Generar número de factura =======
+    const numeroFactura = "FAC-" + Date.now();
+
+    // ======= Fecha =======
+    const fecha = new Date().toLocaleDateString();
+
+    // ======= DATOS DEL CLIENTE =======
+    const nombre = document.querySelector("input[type='text']").value || "No especificado";
+    const correo = document.querySelector("input[type='email']").value || "No especificado";
+    const telefono = document.querySelectorAll("input[type='text']")[1].value || "No especificado";
+    const direccion = document.querySelector("textarea").value || "No especificado";
+
+    // ======= CARGAR CARRITO =======
+    let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+    let total = 0;
+
+    // ======= ESTILO =======
+    pdf.setFont("Helvetica", "normal");
+
+    // =====================================================
+    //                     ENCABEZADO
+    // =====================================================
+    pdf.setFillColor(255, 60, 40); // Rojo elegante
+    pdf.rect(0, 0, 700, 80, "F");
+
+    pdf.setFontSize(26);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text("FACTURA DE COMPRA", 40, 50);
+
+    pdf.setFontSize(12);
+    pdf.text(`Factura: ${numeroFactura}`, 500, 30);
+    pdf.text(`Fecha: ${fecha}`, 500, 50);
+
+    // =====================================================
+    //                 DATOS DEL CLIENTE
+    // =====================================================
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(18);
+    pdf.text("Datos del Cliente", 40, 120);
+
+    pdf.setFontSize(13);
+    pdf.text(`Nombre: ${nombre}`, 40, 150);
+    pdf.text(`Correo: ${correo}`, 40, 170);
+    pdf.text(`Teléfono: ${telefono}`, 40, 190);
+    pdf.text(`Dirección: ${direccion}`, 40, 210);
+
+    // Línea separadora
+    pdf.setDrawColor(200, 200, 200);
+    pdf.line(40, 230, 570, 230);
+
+    // =====================================================
+    //                   TABLA DE PRODUCTOS
+    // =====================================================
+    pdf.setFontSize(18);
+    pdf.text("Productos", 40, 260);
+
+    let y = 300;
+
+    // Header tabla
+    pdf.setFontSize(14);
+    pdf.setFillColor(240, 240, 240);
+    pdf.rect(40, y - 20, 530, 25, "F");
+    pdf.setTextColor(0);
+    pdf.text("Producto", 50, y - 2);
+    pdf.text("Precio", 500, y - 2);
+
+    y += 10;
+
+    pdf.setFontSize(12);
+
+    carrito.forEach(item => {
+        pdf.text(item.titulo, 50, y + 20);
+        pdf.text(`$${item.precio}`, 500, y + 20);
+
+        y += 30;
+        total += Number(item.precio);
+    });
+
+    // =====================================================
+    //                 TOTAL EN CAJA DESTACADA
+    // =====================================================
+    pdf.setFillColor(255, 60, 40);
+    pdf.setTextColor(255, 255, 255);
+    pdf.rect(40, y + 20, 530, 40, "F");
+
+    pdf.setFontSize(18);
+    pdf.text(`TOTAL A PAGAR: $${total}`, 180, y + 48);
+
+    // =====================================================
+    //                 FOOTER
+    // =====================================================
+    pdf.setFontSize(12);
+    pdf.setTextColor(120);
+    pdf.text("Gracias por tu compra. Si tienes dudas, contáctanos.", 40, 760);
+
+    // GUARDAR PDF
+    pdf.save(`Factura-${nombre}.pdf`);
+}
+</script>
+</body>
+</html>
